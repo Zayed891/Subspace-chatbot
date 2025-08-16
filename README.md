@@ -42,7 +42,6 @@ A modern, production-ready React chatbot application built with Vite, Tailwind C
 4. **Build for Production**
    ```bash
    npx vite build
-   npm run preview
    ```
 
 ## Database Schema
