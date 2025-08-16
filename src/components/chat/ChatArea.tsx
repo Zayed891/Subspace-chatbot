@@ -72,7 +72,7 @@ export default function ChatArea({ chatId }: ChatAreaProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+    <div className="flex-1 flex flex-col overflow-y-auto px-4 bg-white">
       <div className="border-b border-gray-200 p-4">
         <h1 className="text-lg font-semibold text-gray-900">Chat</h1>
       </div>
