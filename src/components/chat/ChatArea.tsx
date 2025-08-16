@@ -77,7 +77,9 @@ export default function ChatArea({ chatId }: ChatAreaProps) {
         <h1 className="text-lg font-semibold text-gray-900">Chat</h1>
       </div>
 
-      <MessageList messages={messages} isLoading={isLoading} />
+      <div className="flex-1 overflow-y-auto px-4">
+        <MessageList messages={messages} isLoading={isLoading} />
+      </div>
 
       <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} />
     </div>
