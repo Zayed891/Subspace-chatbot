@@ -4,51 +4,58 @@ import {
   useSignUpEmailPassword
 } from '@nhost/react'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
-import { toast } from 'react-hot-toast'                    // ← NEW
-import { useNavigate } from 'react-router-dom'            // ← NEW
+import { toast } from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 
 export default function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-
-  const navigate = useNavigate()                          // ← NEW
+  const navigate = useNavigate()
 
   const {
     signInEmailPassword,
-    isLoading: isSigningIn,
-    error: signInError
+    isLoading: isSigningIn
   } = useSignInEmailPassword()
 
   const {
     signUpEmailPassword,
-    isLoading: isSigningUp,
-    error: signUpError
+    isLoading: isSigningUp
   } = useSignUpEmailPassword()
 
+  const [formError, setFormError] = useState<string | null>(null)
+
   const isLoading = isSigningIn || isSigningUp
-  const error = signInError || signUpError
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
     if (isSignUp) {
       const { error } = await signUpEmailPassword(email, password)
       if (!error) {
-        // ① Notify the user
         toast.success(
           'Account created! Check your inbox (or spam) to verify your email.'
         )
-
-        // ② Switch to sign-in after 5 s
         setTimeout(() => {
-          setIsSignUp(false)           // stay on same page
-          // navigate('/login')        // ← use this instead if you have a /login route
+          setIsSignUp(false)           // or navigate('/login')
         }, 5000)
+      } else {
+        setFormError(error.message)
       }
     } else {
-      await signInEmailPassword(email, password)
+      const { error } = await signInEmailPassword(email, password)
+      if (error) {
+        // ↙ Detect “user not found”
+        if (error.message === 'invalid-username-password') {
+          const msg = 'No account found. Please sign up first.'
+          toast.error(msg)
+          setFormError(msg)
+        } else {
+          setFormError(error.message)
+        }
+      }
     }
   }
 
@@ -65,74 +72,61 @@ export default function LoginForm() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="-space-y-px">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-xl relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+          {/* Email */}
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="Email address"
+            className="appearance-none rounded-xl block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-            {/* Password */}
-            <div className="relative mt-4">
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                required
-                className="rounded-xl relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <EyeIcon className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error.message}</div>
-          )}
-
-          <div>
+          {/* Password + eye toggle */}
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              placeholder="Password"
+              className="mt-4 rounded-xl block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-              ) : isSignUp ? (
-                'Sign up'
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5 text-gray-400" />
               ) : (
-                'Sign in'
+                <EyeIcon className="h-5 w-5 text-gray-400" />
               )}
             </button>
           </div>
+
+          {/* Inline error */}
+          {formError && (
+            <div className="text-red-600 text-sm text-center">{formError}</div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+            ) : isSignUp ? (
+              'Sign up'
+            ) : (
+              'Sign in'
+            )}
+          </button>
 
           <div className="text-center">
             <button
@@ -150,3 +144,4 @@ export default function LoginForm() {
     </div>
   )
 }
+
