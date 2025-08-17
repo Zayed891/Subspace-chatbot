@@ -3,8 +3,6 @@ import { useQuery, useMutation } from '@apollo/client'
 import { useUserData } from '@nhost/react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
 import ChatArea from '../chat/ChatArea'
 import { Chat } from '../../types'
@@ -22,7 +20,6 @@ export default function MainLayout() {
 
   const handleSelectChat = (chatId: string) => {
     navigate(`/chat/${chatId}`)
-    setIsSidebarOpen(false) // Close sidebar on mobile after selection
   }
 
   const handleNewChat = async () => {
@@ -38,7 +35,6 @@ export default function MainLayout() {
         await refetchChats()
         navigate(`/chat/${newChatId}`)
         toast.success('New chat created!')
-        setIsSidebarOpen(false) // Close sidebar on mobile after creation
       }
     } catch (error: any) {
       console.error('Error creating chat:', error)
@@ -62,15 +58,8 @@ export default function MainLayout() {
 
   if (chatsLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center"
-        >
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading your chats...</p>
-        </motion.div>
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -78,53 +67,39 @@ export default function MainLayout() {
   return (
     <div className="h-screen flex overflow-hidden">
       {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="p-2 bg-white border border-gray-300 rounded-lg shadow-sm"
         >
-          {isSidebarOpen ? (
-            <XMarkIcon className="h-6 w-6" />
-          ) : (
-            <Bars3Icon className="h-6 w-6" />
-          )}
-        </motion.button>
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
 
       {/* Sidebar */}
-      <AnimatePresence>
-        {(isSidebarOpen || window.innerWidth >= 1024) && (
-          <>
-            <motion.div
-              initial={{ x: -320 }}
-              animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed lg:relative z-40 h-full"
-            >
-              <Sidebar
-                chats={chats}
-                selectedChatId={chatId || null}
-                onSelectChat={handleSelectChat}
-                onNewChat={handleNewChat}
-              />
-            </motion.div>
-            
-            {/* Mobile backdrop */}
-            {window.innerWidth < 1024 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-                onClick={() => setIsSidebarOpen(false)}
-              />
-            )}
-          </>
-        )}
-      </AnimatePresence>
+      <div className={`
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 
+        transform transition-transform duration-300 ease-in-out
+        fixed md:relative z-40 h-full
+      `}>
+        <Sidebar
+          chats={chats}
+          selectedChatId={chatId || null}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+        />
+      </div>
+
+      {/* Sidebar backdrop on mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-25 z-30"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
